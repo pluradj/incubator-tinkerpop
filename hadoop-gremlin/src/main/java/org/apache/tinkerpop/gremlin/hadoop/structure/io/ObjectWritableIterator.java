@@ -26,6 +26,7 @@ import org.apache.hadoop.io.SequenceFile;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -34,7 +35,7 @@ import java.util.Queue;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public final class ObjectWritableIterator implements Iterator<KeyValue> {
+public final class ObjectWritableIterator implements Iterator<KeyValue>, Closeable {
 
     private final ObjectWritable key = new ObjectWritable();
     private final ObjectWritable value = new ObjectWritable();
@@ -44,6 +45,15 @@ public final class ObjectWritableIterator implements Iterator<KeyValue> {
     public ObjectWritableIterator(final Configuration configuration, final Path path) throws IOException {
         for (final FileStatus status : FileSystem.get(configuration).listStatus(path, HiddenFileFilter.instance())) {
             this.readers.add(new SequenceFile.Reader(configuration, SequenceFile.Reader.file(status.getPath())));
+        }
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (this.readers != null) {
+            for (final SequenceFile.Reader reader : readers) {
+                reader.close();
+            }
         }
     }
 

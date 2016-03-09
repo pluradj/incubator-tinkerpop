@@ -44,6 +44,7 @@ import org.apache.tinkerpop.gremlin.hadoop.structure.io.VertexWritable;
 import org.apache.tinkerpop.gremlin.hadoop.structure.util.ConfUtil;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
+import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
@@ -61,11 +62,13 @@ import org.apache.tinkerpop.gremlin.spark.structure.io.PersistedOutputRDD;
 import org.apache.tinkerpop.gremlin.spark.structure.io.SparkContextStorage;
 import org.apache.tinkerpop.gremlin.structure.io.Storage;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.Iterator;
 import java.util.stream.Stream;
 
 /**
@@ -264,13 +267,22 @@ public final class SparkGraphComputer extends AbstractHadoopGraphComputer {
                         // reduce
                         final JavaPairRDD reduceRDD = mapReduce.doStage(MapReduce.Stage.REDUCE) ? SparkExecutor.executeReduce(combineRDD, mapReduce, newApacheConfiguration) : combineRDD;
                         // write the map reduce output back to disk and computer result memory
+                        Iterator memoryIterator = null;
                         try {
-                            mapReduce.addResultToMemory(finalMemory,
-                                    hadoopConfiguration.getClass(Constants.GREMLIN_SPARK_GRAPH_OUTPUT_RDD, OutputFormatRDD.class, OutputRDD.class)
+                            memoryIterator = hadoopConfiguration.getClass(Constants.GREMLIN_SPARK_GRAPH_OUTPUT_RDD, OutputFormatRDD.class, OutputRDD.class)
                                             .newInstance()
-                                            .writeMemoryRDD(apacheConfiguration, mapReduce.getMemoryKey(), reduceRDD));
+                                            .writeMemoryRDD(apacheConfiguration, mapReduce.getMemoryKey(), reduceRDD);
+                            mapReduce.addResultToMemory(finalMemory, memoryIterator);
                         } catch (final InstantiationException | IllegalAccessException e) {
                             throw new IllegalStateException(e.getMessage(), e);
+                        } finally {
+                            if (memoryIterator instanceof Closeable) {
+                                try {
+                                    ((Closeable)memoryIterator).close();
+                                } catch (IOException e) {
+                                    throw new IllegalStateException(e.getMessage(), e);
+                                }
+                            }
                         }
                     }
                 }
