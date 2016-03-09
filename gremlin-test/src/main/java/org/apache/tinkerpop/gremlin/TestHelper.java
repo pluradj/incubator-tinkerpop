@@ -51,7 +51,7 @@ import static org.junit.Assert.assertFalse;
  */
 public final class TestHelper {
 
-    private static final String SEP = File.separator;
+    private static final String SEP = "/";
     private static final char URL_SEP = '/';
     public static final String TEST_DATA_RELATIVE_DIR = "test-case-data";
 

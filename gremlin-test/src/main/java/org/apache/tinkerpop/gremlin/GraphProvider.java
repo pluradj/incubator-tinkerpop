@@ -278,7 +278,7 @@ public interface GraphProvider {
      * to produce the working directory as it will create the path in the appropriate build directories.
      */
     public default String getWorkingDirectory() {
-        return TestHelper.makeTestDataPath(this.getClass(), "graph-provider-data").getAbsolutePath();
+        return TestHelper.makeTestDataPath(this.getClass(), "graph-provider-data").getAbsolutePath().replace('\\', '/');
     }
 
     /**

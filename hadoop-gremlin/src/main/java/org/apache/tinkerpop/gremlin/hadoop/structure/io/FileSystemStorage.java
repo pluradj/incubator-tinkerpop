@@ -165,7 +165,7 @@ public final class FileSystemStorage implements Storage {
     @Override
     public Iterator<Vertex> head(final String location, final Class parserClass, final int totalLines) {
         final org.apache.commons.configuration.Configuration configuration = new BaseConfiguration();
-        configuration.setProperty(Constants.GREMLIN_HADOOP_INPUT_LOCATION, Constants.getSearchGraphLocation(location, this).get());
+        configuration.setProperty(Constants.GREMLIN_HADOOP_INPUT_LOCATION, Constants.getSearchGraphLocation(location, this).get().replace('\\', '/'));
         configuration.setProperty(Constants.GREMLIN_HADOOP_GRAPH_INPUT_FORMAT, parserClass.getCanonicalName());
         try {
             if (InputFormat.class.isAssignableFrom(parserClass))
